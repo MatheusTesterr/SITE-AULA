@@ -1,79 +1,96 @@
 document.querySelector("#salvar").addEventListener("click", cadastrar)
-document.querySelector("#cancelar").addEventListener("click", cancelar)
 
-let lista_tarefas = []
+let tarefas = []
 
 window.addEventListener("load", () => {
-    const tarefas = JSON.parse(localStorage.getItem("lista_tarefas"))
-    tarefas.forEach((tarefa) => {
-        document.querySelector("#tarefas").innerHTML += gerarCard(tarefa)
-    })
+    tarefas = JSON.parse( localStorage.getItem("tarefas") ) || []
+    atualizar()
 })
 
-function cancelar(){
-    document.querySelector("#titulo").value = ""
-    document.querySelector("#descricao").value = ""
-    document.querySelector("#categoria").value = "Categoria"
+function atualizar(){
+    localStorage.setItem("tarefas", JSON.stringify(tarefas))
+    document.querySelector("#tarefas").innerHTML = ""
+    tarefas.forEach(tarefa => 
+        document.querySelector("#tarefas").innerHTML += criarCard(tarefa))
 }
 
-function cadastrar(){
-    const modal = bootstrap.Modal.getInstance(document.querySelector("#exampleModal"))
-    let titulo = document.querySelector("#titulo").value
-    let descricao = document.querySelector("#descricao").value
-    let categoria = document.querySelector("#categoria").value
+function filtrar(lista){
+    document.querySelector("#tarefas").innerHTML = ""
+    lista.forEach(tarefa => 
+        document.querySelector("#tarefas").innerHTML += criarCard(tarefa)
+    )
+}
 
-    const tarefa = {
+function cadastrar() {
+    const titulo = document.querySelector("#titulo").value
+    const descricao = document.querySelector("#descricao").value
+    const categoria = document.querySelector("#categoria").value
+    const modal = bootstrap.Modal.getInstance(document.querySelector("#exampleModal"))
+
+    const tarefa = { //JSON Java Script Object Notation
+        id: Date.now(),
         titulo,
         descricao,
         categoria,
+        concluida: false
     }
 
-    if (tarefa.titulo.length == 0){
-        document.querySelector("#titulo").classList.add("is-invalid")
-        return
-    }
+    if (!isValid(tarefa.titulo, document.querySelector("#titulo"))) return
 
-    lista_tarefas.push(tarefa)
+    tarefas.push(tarefa)
 
-    document.querySelector("#tarefas").innerHTML += gerarCard(tarefa)
-
-    document.querySelector("#titulo").value = ""
-    document.querySelector("#descricao").value = ""
-    document.querySelector("#categoria").value = "Categoria"
-
-    localStorage.setItem("lista_tarefas", JSON.stringify(lista_tarefas))
-
+    atualizar()
     modal.hide()
+}
+
+function isValid(valor, campo){
+    if(valor.length == 0){
+        campo.classList.add("is-invalid")
+        campo.classList.remove("is-valid")
+        return false
+    }else{
+        campo.classList.add("is-valid")
+        campo.classList.remove("is-invalid")
+        return true
+    }
 
 }
 
 function apagar(id){
-lista_tarefas.filter(() => {
-    return tarefa.id != id 
-})
-salvar()
+    tarefas = tarefas.filter(tarefa=> tarefa.id !== id)
+    atualizar()
 }
 
-function gerarCard(tarefa){
-    return `<div class="col-12 col-md-6 col-lg-3">
-    <div class="card">
-        <div class="card-header">
-            ${tarefa.titulo}
-        </div>
-        <div class="card-body">
-            <p class="card-text">${tarefa.descricao}</p>
-            <p>
-                <span class="badge text-bg-warning">${tarefa.categoria}</span>
-            </p>
-            <a href="#" class="btn btn-success">
-                <i class="bi bi-check-lg"></i>
-            </a>
-            </a>
-            <a href="#" onClick="apagar(${tarefa.id})" class="btn btn-danger" title="apagar tarefa">
-                <i class="bi bi-trash3"></i>
-            </a>
-        </div>
-    </div> <!-- card -->
-</div> <!-- col -->
-`
+function concluir(id){
+    let tarefaEncontrada = 
+            tarefas.find(tarefa => tarefa.id == id)
+    tarefaEncontrada.concluida = true
+    atualizar()
+}
+
+function criarCard(tarefa) {
+    let disabled = tarefa.concluida ? "disabled" : ""
+
+    const card = `
+        <div class="col-lg-3 col-md-6 col-sm-12">
+        <div class="card">
+            <div class="card-header">
+                ${tarefa.titulo}
+            </div>
+            <div class="card-body">
+                <p class="card-text">${tarefa.descricao}</p>
+                <p class="card-text">${tarefa.categoria}</p>
+            </div>
+            <div class="card-footer">
+                <a onClick="concluir(${tarefa.id})" href="#" class="btn btn-success ${disabled}" title="marcar como concluída">
+                    <i class="bi bi-check2"></i>
+                </a>
+                <a href="#" onClick="apagar(${tarefa.id})" class="btn btn-danger" title="apagar tarefa">
+                    <i class="bi bi-trash3"></i>
+                </a>
+            </div> <!-- card footer -->
+        </div> <!-- card -->
+    </div> <!-- col -->
+    ` 
+    return card
 }
